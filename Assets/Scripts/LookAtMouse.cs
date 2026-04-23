@@ -1,0 +1,106 @@
+using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+using UnityEngine.UI;
+using UnityEngine.EventSystems;
+
+public class LookAtMouse : MonoBehaviour
+{
+    private RectTransform rectTransform;
+    private Canvas canvas;
+
+    public Image painting;
+
+    private bool animate;
+    private bool fadeIn;
+
+    private bool left;
+    private bool right;
+
+    public Animator bear;
+    public Animator fade;
+
+    public float timeRequired = 2f;
+    private float currentHoverTime = 0.0f;
+
+    Vector3 originPosition;
+    void Start()
+    {
+        rectTransform = GetComponent<RectTransform>();
+        canvas = GetComponentInParent<Canvas>();
+
+        animate = false;
+        fadeIn = false;
+
+        originPosition = transform.position;
+    }
+
+    void Update()
+    {
+        if (EventSystem.current.IsPointerOverGameObject())
+        {
+            animate = true; //Animate painting (if contains specific animation conditions, mouse interaction, etc).
+            fadeIn = true;
+
+            fade.SetBool("FadeOut", true); //Fade-out animation for the original cave painting image.
+            fade.SetBool("FadeIn", false); //Fade-in animation for the original cave painting image.
+        }
+
+        if (!EventSystem.current.IsPointerOverGameObject())
+        {
+            fadeIn = false; //Fade-in animation for original cave painting + reset animation to original position.
+        }
+
+        if (!fadeIn)
+        {
+            currentHoverTime += Time.deltaTime;
+
+            if (currentHoverTime >= timeRequired) //Timer to trigger fade-in animation for original cave painting image.
+            {
+                currentHoverTime = 0.0f;
+
+                fade.SetBool("FadeOut", false);
+                fade.SetBool("FadeIn", true);
+                bear.Play("BearLookLeft"); //Returns animation to default position for fade-in.
+
+                animate = false;
+                transform.position = originPosition;
+            }
+        }
+
+        if (animate)
+        {
+            Vector2 mousePos; //Mouse position.
+
+            RectTransformUtility.ScreenPointToLocalPointInRectangle //Convert mouse coordinates to local coordinates.
+            (
+                canvas.transform as RectTransform,
+                Input.mousePosition,
+                canvas.renderMode == RenderMode.ScreenSpaceOverlay ? null : canvas.worldCamera,
+                out mousePos
+            );
+
+            Vector2 direction = mousePos - rectTransform.anchoredPosition;
+            if (direction.x < -100) //If the mouse is to the left of the x-position of the bear's head.
+            {
+                left = true;
+                right = false;
+            }
+            else if (direction.x > -100) //If the mouse is to the right of the x-position of the bear's head.
+            {
+                left = false;
+                right = true;
+            }
+
+            if (left)
+            {
+                bear.Play("BearLookLeft"); //Bear's head animates left.
+            }
+
+            if (right)
+            {
+                bear.Play("BearLookRight"); //Bear's head animates right.
+            }
+        }
+    }
+}
